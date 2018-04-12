@@ -13,14 +13,14 @@ client = discord.Client()
 inputThread = None
 channels = []
 logChannel = None
-users = []
+users = {}
 
 class userClass:
     
     #Functions
-    def __init__(self, userid,userroles,userpoints):
+    def __init__(self,name,userid,userpoints):
+      self.name = name
       self.id = userid
-      self.roles = userroles
       self.points = userpoints
 
 
@@ -32,6 +32,8 @@ class InputThread(threading.Thread):
             print("CONSOLE: " + self.last_user_input)
             if self.last_user_input == "exit" or self.last_user_input == "close" or self.last_user_input == "quit" or self.last_user_input == "q":
                 closeProg()
+            elif self.last_user_input == "save":
+                save()
 
 
 @client.event
@@ -50,7 +52,7 @@ async def on_ready():
                 logChannel = channel
                 break
     print("LOGGING CHANNEL: " + logChannel.name + ", ID: " + logChannel.id)
-    print("Loaded " + str(load()) + " user profiles!")
+    print("Loaded " + str(load()) + " existing users!")
     inputThread = InputThread()
     inputThread.daemon = True
     inputThread.start()
@@ -64,7 +66,7 @@ async def on_message(message):
 
     #Log message:
     timeStamp = message.timestamp.strftime("%m/%d/%y %H:%M:%S")
-    logString = timeStamp + " " + message.channel.mention + " - " + message.author.name + ": " + message.content
+    logString = "`"+timeStamp + " " + message.channel.mention + " - " + message.author.name + ": " + message.content+"`"
 
     #If this message is not bot's, and not in the log channel
     if message.channel.id != logChannel.id:
@@ -116,23 +118,22 @@ async def on_message(message):
             choice = random.choice(options)
             await client.send_message(message.channel, "*I choose: \"" + choice + "\"*")
         elif message.content.startswith('!allstats'):
-            messageString = "**Found " + str(len(users)) + " users:**\n"
-            for user in users:
-                userinfo = await client.get_user_info(user.id)
-                messageString +="**Name:** \"" + userinfo.name + "\", **ID:** " + user.id + "\n**Roles:** " + user.roles + ", **Points:** " + user.points + "\n"
-            await client.send_message(message.channel, messageString)
+            messageText="**Found "+str(len(users))+" Users:**\n"
+            #Iterate through users, adding their stats to the string
+            for userKey, userVal in users.items():
+                messageText+=getUserStats(userKey)
+            #Trucate if necessary (TEMPORARY)
+            max_chars = 1000
+            messageText = (messageText[:(max_chars - 4)] + '...`')if len(messageText) > max_chars else messageText
+            await client.send_message(message.channel, messageText)
         elif message.content.startswith('!stats'):
-            userinfo = message.author
-            user = None
-            for curUser in users:
-                if curUser.id == userinfo.id:
-                    user = curUser
-                    break
-            messageString = "**Name:** \"" + userinfo.name + "\", **ID:** " + user.id + "\n**Roles:** " + user.roles + ", **Points:** " + user.points + "\n"
+            id=message.author.id
+            messageString = getUserStats(id)
             await client.send_message(message.channel, messageString)
         elif message.content.startswith('!motd'):
             motdText = readFile("resources/motd.txt")
             await client.send_message(message.channel, motdText)
+
         #Other Hooks
         elif message.content.startswith('!wiki'):
             #Split up Strings
@@ -145,8 +146,8 @@ async def on_message(message):
             for string in strings:
                 query+=(string + " ")
             print(query)
-            messagetext=""
-            page=None
+            messagetext = ""
+            page = None
             #Error Handling
             try:
                 #Get page
@@ -154,12 +155,12 @@ async def on_message(message):
                 messageText = "***" + page.title + ":***\n" + page.url + "\n`" + page.summary + "`\n"
 
             except wikipedia.exceptions.DisambiguationError as e:
-                options=""
+                options = ""
                 for option in e.options:
-                    options+=(option+'\n')
-                messageText="*Sorry, be a bit more specific? I found all these things:*\n`"+options+"`"
+                    options+=(option + '\n')
+                messageText = "*Sorry, be a bit more specific? I found all these things:*\n`" + options + "`"
             except wikipedia.exceptions.PageError as e:
-                messageText="*Sorry, I can't find anything for \""+query+"\" on Wikipedia*."
+                messageText = "*Sorry, I can't find anything for \"" + query + "\" on Wikipedia*."
                 
             #Truncate message
             max_chars = 1000
@@ -168,13 +169,30 @@ async def on_message(message):
 
         #Point Commands
         elif message.content.startswith('!add'):
-            True 
+            strings=message.content.split()
+            if len(strings) < 2 or not (isInt(strings[1]) or isInt(strings[2])):
+                await client.send_message(message.channel, "`Usage: !add <# of points> @user `")
+                return
+            
+            amount=None
+            if isInt(strings[1]): 
+                amount=int(strings[1])
+            else: 
+                amount=int(strings[2])
+            userID=str(message.mentions[0].id)
+
+            #Set Points
+            users[userID].points=str(int(users[userID].points)+amount)
+
+    #Exceptions
     except Exception as e:
         error = e
-        print("ERROR ENCOUNTERED: COMMAND:{"+message.content+"},ERROR:{"+(str(error))+"}")
-        await client.send_message(message.channel, "***Sorry, something's gone wrong!***\n *If this keeps happening, let wolfinabox know that the following error occured:*\n`"+"COMMAND:{"+message.content+"},ERROR:{"+(str(error))+"}`")
+        print("ERROR ENCOUNTERED: COMMAND:{" + message.content + "},ERROR:{" + (str(error)) + "}")
+        await client.send_message(message.channel, "***Sorry, something's gone wrong!***\n *If this keeps happening, let wolfinabox know that the following error occured:*\n`" + "COMMAND:{" + message.content + "},ERROR:{" + (str(error)) + "}`")
 
-
+def getUserStats(id):
+    userC=users[id]
+    return ("**Name:** \"" + userC.name + "\", **ID:** " + userC.id +", **Points:** " + userC.points + "\n")
 
 def randNumGen(high, low):
     random.seed()
@@ -188,23 +206,34 @@ def isInt(s):
         return False
 
 def save():
+    print("Saving "+str(len(users))+" users...\n")
     usersFile = open("resources/stats.txt","w+")
-    for user in users:
-        saveString = user.id + "," + user.roles + "," + user.points
-        usersFile.write(saveString)
+    for userKey,userValue in users.items():
+        saveString = userValue.name+","+userValue.id + "," + userValue.points
+        usersFile.write(saveString+'\n')
     usersFile.close()
+    print("Saving complete!\n")
 
 def load():
     global users
+    #Load Existing Users
     numUsers = 0
     usersFile = open("resources/stats.txt")
     line = usersFile.readline()
     while line:
+        line=line.strip()
+        if line.isspace(): continue
         parts = line.split(',')
-        users.append(userClass(parts[0],parts[1],parts[2]))
+        users[parts[1]] = (userClass(parts[0],parts[1],parts[2]))
         line = usersFile.readline()
         numUsers+=1
     usersFile.close()
+
+    #Create new users
+    for user in client.get_all_members():
+        if not users.get(user.id):
+            users[user.id] = (userClass(user.name,user.id,'1000'))
+            print("Created Entry for User: " + user.name + ", ID: " + user.id + "\n")
     return numUsers
 
 def stringOps(string):
@@ -221,8 +250,8 @@ def readFile(fileName):
            line = file.readline()
     return returnString
 
-
 def restart_program():
+    save()
     python = sys.executable
     os.execl(python, python, * sys.argv)
 
