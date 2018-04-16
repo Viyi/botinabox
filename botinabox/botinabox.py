@@ -10,8 +10,12 @@ import wikipedia
 from difflib import SequenceMatcher
 #================================================#
 #===============USER SET VARIABLES===============#
+#This is the character to use commands (EG: !help, &help, #help)
 commandChar='&'
+#This is the channel on the server to log chat to
 logChannelName="logs"
+#This is the client ID of the bot account you've created
+clientID='id_here'
 #================================================#
 #================================================#
 
@@ -308,4 +312,4 @@ def loadCommands():
 def closeProg():
     save()
 
-client.run('NDMzMzg1MDQxNTYxNjQ5MTUz.Da7E3g.k9qnxY-onBYU3HdTP3Kta78w1Aw')
+client.run(clientID)
