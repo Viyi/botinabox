@@ -1,12 +1,12 @@
 ***BotInABox Helpfile, v0.0.4***
 **<=======================================================>**
-**!help** - See this helpfile
-**!purge** *<amount>* Purge (delete) the number of messages specified in the current channel
-**!random** *<high> <low>* Generate a random number between high and low
-**!choose** *<choice1|choice2|choice3|...>* Chooses randomly from the given options
-**!restart** Restarts the bot ***(ADMIN ONLY, USE ONLY IF NECESSARY)***
-**!motd** Show the current *"message of the day"*
-**!stats** Prints in stats for the user requesting
-**!allstats** Prints stats for every user on the server
-**!wiki** *<thing>* Search something up on wikipedia!
+`$commandChar$help` - See this helpfile
+`$commandChar$purge` **<amount>** Purge (delete) the number of messages specified in the current channel
+`$commandChar$random` **<high> <low>** Generate a random number between high and low
+`$commandChar$choose` **<choice1|choice2|choice3|...>** Chooses randomly from the given options
+`$commandChar$restart` Restarts the bot ***(ADMIN ONLY, USE ONLY IF NECESSARY)***
+`$commandChar$motd` Show the current *"message of the day"*
+`$commandChar$stats` Prints in stats for the user requesting
+`$commandChar$allstats` Prints stats for every user on the server
+`$commandChar$wiki` **<thing>** Search something up on wikipedia!
 **<=======================================================>**

@@ -7,13 +7,25 @@ import re
 import threading
 import datetime
 import wikipedia
+from difflib import SequenceMatcher
+#================================================#
+#===============USER SET VARIABLES===============#
+commandChar='&'
+logChannelName="logs"
+#================================================#
+#================================================#
 
-client = discord.Client()
 
 inputThread = None
 channels = []
 logChannel = None
 users = {}
+commands=[]
+
+client = discord.Client()
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
 
 class userClass:
     
@@ -32,6 +44,8 @@ class InputThread(threading.Thread):
             print("CONSOLE: " + self.last_user_input)
             if self.last_user_input == "exit" or self.last_user_input == "close" or self.last_user_input == "quit" or self.last_user_input == "q":
                 closeProg()
+                os._exit
+                exit()
             elif self.last_user_input == "save":
                 save()
 
@@ -47,15 +61,18 @@ async def on_ready():
     channels = client.get_all_channels()
     for channel in channels:
             #print(channel.name+", ID: "+channel.id);
-            if channel.name == "logs":
+            if channel.name == logChannelName:
                 global logChannel
                 logChannel = channel
                 break
     print("LOGGING CHANNEL: " + logChannel.name + ", ID: " + logChannel.id)
     print("Loaded " + str(load()) + " existing users!")
+    global inputThread
     inputThread = InputThread()
     inputThread.daemon = True
     inputThread.start()
+    loadCommands()
+    print("Loaded commands: "+'[%s]' % ', '.join(map(str, commands)))
 
 
 @client.event
@@ -66,7 +83,7 @@ async def on_message(message):
 
     #Log message:
     timeStamp = message.timestamp.strftime("%m/%d/%y %H:%M:%S")
-    logString = "`"+timeStamp + " " + message.channel.mention + " - " + message.author.name + ": " + message.content+"`"
+    logString = "`" + timeStamp + " " + message.channel.mention + " - " + message.author.name + ": " + message.content + "`"
 
     #If this message is not bot's, and not in the log channel
     if message.channel.id != logChannel.id:
@@ -76,10 +93,10 @@ async def on_message(message):
     try:
         #COMMANDS
         #General Commands
-        if message.content.startswith('!help'):
+        if message.content.startswith(commandChar+'help'):
             helpText = readFile("resources/doc.txt")
             await client.send_message(message.channel, helpText)
-        elif message.content.startswith('!purge'):
+        elif message.content.startswith(commandChar+'purge'):
             strings = message.content.split()
             if len(strings) < 2 or not isInt(strings[1]):
                 await client.send_message(message.channel, "`Usage: !purge <num of msgs> `")
@@ -92,20 +109,20 @@ async def on_message(message):
             async for x in client.logs_from(message.channel, limit=delNum):
                 msgs.append(x)
             await client.delete_messages(msgs)
-        elif message.content.startswith('!random'):
+        elif message.content.startswith(commandChar+'random'):
             strings = message.content.split()
             if len(strings) < 3 or not isInt(strings[1]) or not isInt(strings[2]):
                 await client.send_message(message.channel, "`Usage: !random <low> <high>`")
                 return
             randNum = str(randNumGen(int(strings[1]), int(strings[2])))
             await client.send_message(message.channel, "*Your random number is:* " + randNum)
-        elif message.content.startswith('!restart'):
+        elif message.content.startswith(commandChar+'restart'):
             if os.name == 'nt':
                 await client.send_message(message.channel, "*Sorry, I'm running in a DEV Environment right now and can't be restarted by command!\nTalk to wolfinabox if this comes up frequently.*")
             else:
                 await client.send_message(message.channel, "*Restarting... See you soon!*")
                 restart_program()
-        elif message.content.startswith('!choose'):
+        elif message.content.startswith(commandChar+'choose'):
             strings = message.content.split(None,1)
             if len(strings) < 2:
                 await client.send_message(message.channel, "`Usage: !choose <option1|option2|option3|...> `")
@@ -117,8 +134,8 @@ async def on_message(message):
                 return
             choice = random.choice(options)
             await client.send_message(message.channel, "*I choose: \"" + choice + "\"*")
-        elif message.content.startswith('!allstats'):
-            messageText="**Found "+str(len(users))+" Users:**\n"
+        elif message.content.startswith(commandChar+'allstats'):
+            messageText = "**Found " + str(len(users)) + " Users:**\n"
             #Iterate through users, adding their stats to the string
             for userKey, userVal in users.items():
                 messageText+=getUserStats(userKey)
@@ -126,16 +143,16 @@ async def on_message(message):
             max_chars = 1000
             messageText = (messageText[:(max_chars - 4)] + '...`')if len(messageText) > max_chars else messageText
             await client.send_message(message.channel, messageText)
-        elif message.content.startswith('!stats'):
-            id=message.author.id
+        elif message.content.startswith(commandChar+'stats'):
+            id = message.author.id
             messageString = getUserStats(id)
             await client.send_message(message.channel, messageString)
-        elif message.content.startswith('!motd'):
+        elif message.content.startswith(commandChar+'motd'):
             motdText = readFile("resources/motd.txt")
             await client.send_message(message.channel, motdText)
 
         #Other Hooks
-        elif message.content.startswith('!wiki'):
+        elif message.content.startswith(commandChar+'wiki'):
             #Split up Strings
             strings = message.content.split()
             if len(strings) < 2:
@@ -168,21 +185,46 @@ async def on_message(message):
             await client.send_message(message.channel, messageText)
 
         #Point Commands
-        elif message.content.startswith('!add'):
-            strings=message.content.split()
+        elif message.content.startswith(commandChar+'add'):
+            strings = message.content.split()
             if len(strings) < 2 or not (isInt(strings[1]) or isInt(strings[2])):
                 await client.send_message(message.channel, "`Usage: !add <# of points> @user `")
                 return
             
-            amount=None
+            amount = None
             if isInt(strings[1]): 
-                amount=int(strings[1])
+                amount = int(strings[1])
             else: 
-                amount=int(strings[2])
-            userID=str(message.mentions[0].id)
+                amount = int(strings[2])
+            userID = str(message.mentions[0].id)
 
             #Set Points
-            users[userID].points=str(int(users[userID].points)+amount)
+            users[userID].points = str(int(users[userID].points) + amount)
+
+
+        #Command not recognised
+        elif message.content.startswith(commandChar):
+            messageText=""
+            strings = message.content.split()
+            commandsDict={}
+            #Set percent likelyhood of each command
+            for string in commands:
+                percent=int(similar(strings[0],string)*100)
+                while percent in commandsDict.keys():
+                    percent+=1
+                commandsDict[percent]=string
+            #commandsDict=sorted(commandsDict,key=commandsDict.get)
+            mostLikelyPercent=max(k for k, v in  commandsDict.items())
+            mostLikelyString=commandsDict[mostLikelyPercent]
+            messageText+="*Sorry, I don't recognise \""+strings[0]+"\"*\n"
+            if (mostLikelyPercent>40):
+                messageText+="*Did you mean:*\n"
+                for key in reversed(sorted(commandsDict)):
+                   if (key>40):
+                         messageText+="*("+str(key)+"%)* `"+commandsDict[key]+"`\n"
+            
+            await client.send_message(message.channel, messageText)
+
 
     #Exceptions
     except Exception as e:
@@ -191,8 +233,8 @@ async def on_message(message):
         await client.send_message(message.channel, "***Sorry, something's gone wrong!***\n *If this keeps happening, let wolfinabox know that the following error occured:*\n`" + "COMMAND:{" + message.content + "},ERROR:{" + (str(error)) + "}`")
 
 def getUserStats(id):
-    userC=users[id]
-    return ("**Name:** \"" + userC.name + "\", **ID:** " + userC.id +", **Points:** " + userC.points + "\n")
+    userC = users[id]
+    return ("**Name:** \"" + userC.name + "\", **ID:** " + userC.id + ", **Points:** " + userC.points + "\n")
 
 def randNumGen(high, low):
     random.seed()
@@ -206,11 +248,11 @@ def isInt(s):
         return False
 
 def save():
-    print("Saving "+str(len(users))+" users...\n")
+    print("Saving " + str(len(users)) + " users...\n")
     usersFile = open("resources/stats.txt","w+")
     for userKey,userValue in users.items():
-        saveString = userValue.name+","+userValue.id + "," + userValue.points
-        usersFile.write(saveString+'\n')
+        saveString = userValue.name + "," + userValue.id + "," + userValue.points
+        usersFile.write(saveString + '\n')
     usersFile.close()
     print("Saving complete!\n")
 
@@ -221,7 +263,7 @@ def load():
     usersFile = open("resources/stats.txt")
     line = usersFile.readline()
     while line:
-        line=line.strip()
+        line = line.strip()
         if line.isspace(): continue
         parts = line.split(',')
         users[parts[1]] = (userClass(parts[0],parts[1],parts[2]))
@@ -231,13 +273,15 @@ def load():
 
     #Create new users
     for user in client.get_all_members():
-        if not users.get(user.id):
+        if user.id not in users:
             users[user.id] = (userClass(user.name,user.id,'1000'))
             print("Created Entry for User: " + user.name + ", ID: " + user.id + "\n")
     return numUsers
 
 def stringOps(string):
     string = string.replace('$date$',datetime.datetime.now().strftime("%m/%d/%Y"))
+    string = string.replace('$commandChar$',commandChar)
+
     return string
 
 def readFile(fileName):
@@ -255,8 +299,13 @@ def restart_program():
     python = sys.executable
     os.execl(python, python, * sys.argv)
 
+def loadCommands():
+     file = open("resources/doc.txt")
+     global commands
+     for line in file.readlines():
+            if '`' in line: commands.append(stringOps(line.split("`", 1)[1].split("`", 1)[0]))
+
 def closeProg():
     save()
-    sys.exit()
 
 client.run('NDMzMzg1MDQxNTYxNjQ5MTUz.Da7E3g.k9qnxY-onBYU3HdTP3Kta78w1Aw')
