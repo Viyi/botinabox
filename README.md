@@ -16,3 +16,5 @@ Custom Text Operators (for use in any text files loaded by the program):
 - $date$ = The current date (EG: 4/16/2018)
 
 - $commandChar$ = The current command character in use (EG: !, &, #)
+
+- $serverName$ = The name of the server currently serving the file
