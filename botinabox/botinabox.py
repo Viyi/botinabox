@@ -1,4 +1,4 @@
-import os #For exit and such
+import os#For exit and such
 import sys #For restart
 import discord #For obvious reasons
 import asyncio #Needed for discord
@@ -455,5 +455,11 @@ async def on_message(message):
 #Start bot
 startTime = datetime.datetime.now()
 loadID()
-client.run(clientID)
+try:
+    client.run(clientID)
+except discord.LoginFailure as e:
+    print('Please edit botinabox.py, and set the \'clientID\' variable to the token of your bot,\nfrom https://discordapp.com/developers/applications/me.\nOr, place it in a file named token.txt, beside botinabox.py.\n')
+    client.close()
+    sys.exit()
+
 #END DISCORD CODE
