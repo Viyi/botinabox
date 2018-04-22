@@ -284,6 +284,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    beginTime=datetime.datetime.now()
     server=message.server
     classServer=classServers[server.id]
     path="./resources/servers/"+server.id
@@ -394,7 +395,7 @@ async def on_message(message):
             query = ""
             for string in strings:
                 query+=(string + " ")
-            print(query)
+            print('Wiki query: '+query)
             messagetext = ""
             page = None
             #Error Handling
@@ -441,7 +442,8 @@ async def on_message(message):
                          messageText+="*(" + str(key) + "%)* `" + commandsDict[key] + "`\n"
             
             await client.send_message(message.channel, messageText)
-
+        endTime = datetime.datetime.now() - beginTime
+        if message.content.startswith(classServer.commandChar): print('Message Parsing took: '+str(endTime.seconds)+'.'+str(endTime.microseconds)+' seconds')
 
     #Exceptions
     except Exception as e:
