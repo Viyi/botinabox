@@ -16,14 +16,15 @@ defaultCommandChar = '&'
 #This is the channel on the server to log chat to
 defaultLogChannelName = "logs"
 #This is the default admin role, that can change bot settings
-defaultAdminRole='admin'
+defaultAdminRole = 'admin'
 #Time, in seconds, between autosaves (saves all server/user settings to file)
-autoSaveTime=300
+autoSaveTime = 300
 #This is the client ID of the bot account
 clientID = 'id_here'
-#This determines whether or not to log /all/ messages from /all/ servers to the console.
+#This determines whether or not to log /all/ messages from /all/ servers to the
+#console.
 #Not recommended if the bot is active on many large servers
-logAllMessagesToConsole=True
+logAllMessagesToConsole = True
 #================================================#
 #================================================#
 #DEFAULTS
@@ -65,10 +66,10 @@ class serverClass:
         self.id = id
         self.commandChar = defaultCommandChar
         self.logChannelName = defaultLogChannelName
-        self.adminRole=defaultAdminRole
+        self.adminRole = defaultAdminRole
         self.users = {}
         self.commands = []
-        self.logChannel=None
+        self.logChannel = None
 
 #The class that runs the console input in a separate thread
 class InputThread(threading.Thread):
@@ -91,10 +92,10 @@ class InputThread(threading.Thread):
 #Utility
 def loadID():
     try:
-        file=open('token.txt')
-        loaded_id= file.readline()
+        file = open('token.txt')
+        loaded_id = file.readline()
         global clientID
-        clientID=loaded_id 
+        clientID = loaded_id 
     except FileNotFoundError:
         return
 
@@ -155,16 +156,16 @@ def save():
         print('<=======================>')
 
 def saveServer(serverID):
-    server=classServers[serverID]
-    print('Saving Server: '+client.get_server(serverID).name+', ID: '+str(serverID))
-    path=r'./resources/servers/'+serverID
+    server = classServers[serverID]
+    print('Saving Server: ' + client.get_server(serverID).name + ', ID: ' + str(serverID))
+    path = r'./resources/servers/' + serverID
     #Make folder if necessary
     if not os.path.exists(path):
-        print('Creating directory '+path)
+        print('Creating directory ' + path)
         os.makedirs(path)
     #Save Files
     #Users file
-    usersFile = open(path+"/users.txt","w+")
+    usersFile = open(path + "/users.txt","w+")
     print("Saving " + str(len(server.users)) + " users")
     for userKey,userValue in server.users.items():
        saveString = userValue.name + "," + userValue.id + "," + userValue.points
@@ -172,8 +173,8 @@ def saveServer(serverID):
     usersFile.close()
 
     #Motd file
-    if not os.path.exists(path+"/motd.txt"):
-        motdFile=open(path+"/motd.txt", "w+")
+    if not os.path.exists(path + "/motd.txt"):
+        motdFile = open(path + "/motd.txt", "w+")
         print("Saving default MOTD File")
         motdFile.write(defaultMotd)
         motdFile.close()
@@ -182,49 +183,49 @@ def saveServer(serverID):
     #if not os.path.exists(path+"/doc.txt"):
     #For now, we need to save over the helptext file.
     #In the future, servers will be able to have their own custom helptexts.
-    docFile=open(path+"/doc.txt", "w+")
+    docFile = open(path + "/doc.txt", "w+")
     print("Saving default doc File")
     docFile.write(defaultHelpText)
     docFile.close()
 
     #Settings file
-    settingsFile=open(path+"/settings.txt","w+")
+    settingsFile = open(path + "/settings.txt","w+")
     print("Saving settings")
-    settingsFile.write(server.commandChar+'\n')
-    settingsFile.write(server.logChannelName+'\n')
-    settingsFile.write(server.adminRole+'\n')
+    settingsFile.write(server.commandChar + '\n')
+    settingsFile.write(server.logChannelName + '\n')
+    settingsFile.write(server.adminRole + '\n')
 
 def loadServer(serverID):
     server = client.get_server(serverID)
     #If the server folder doesn't exist already
-    path='./resources/servers/'+serverID
+    path = './resources/servers/' + serverID
     if not os.path.exists(path):
-        print("Creating new entry for "+server.name)
+        print("Creating new entry for " + server.name)
         initServer(serverID)
         return
     #Otherwise, load it from files.
-    print("Loading "+server.name)
+    print("Loading " + server.name)
     classServers[serverID] = (serverClass(serverID))
     
     #Load Settings
-    settingsFile=open(path+"/settings.txt")
-    classServers[serverID].commandChar=settingsFile.readline().strip()
-    classServers[serverID].logChannelName=settingsFile.readline().strip()
-    classServers[serverID].adminRole=settingsFile.readline().strip()
+    settingsFile = open(path + "/settings.txt")
+    classServers[serverID].commandChar = settingsFile.readline().strip()
+    classServers[serverID].logChannelName = settingsFile.readline().strip()
+    classServers[serverID].adminRole = settingsFile.readline().strip()
     settingsFile.close()
 
     #Load Commands
-    helpTextFile=open(path+'/doc.txt')
+    helpTextFile = open(path + '/doc.txt')
     for line in helpTextFile.readlines():
         if '`' in line: classServers[serverID].commands.append(stringOps(line.split("`", 1)[1].split("`", 1)[0],classServers[serverID]).strip())
     helpTextFile.close()
 
     #Load Users
-    usersFile=open(path+'/users.txt')
+    usersFile = open(path + '/users.txt')
     for line in usersFile.readlines():
-        line=line.strip()
+        line = line.strip()
         if line.isspace(): continue
-        parts=line.split(',')
+        parts = line.split(',')
         classServers[serverID].users[parts[1]] = (userClass(parts[0],parts[1],parts[2]))
     usersFile.close()
 
@@ -239,8 +240,8 @@ def loadServer(serverID):
 #Message-related Functions
 async def remind(time,originalMessage,message):
     await asyncio.sleep(time)
-    print('Reminding: '+message)
-    await client.send_message(originalMessage.channel,'*Reminder: <@'+originalMessage.author.id+'>:* '+message)
+    print('Reminding: ' + message)
+    await client.send_message(originalMessage.channel,'*Reminder: <@' + originalMessage.author.id + '>:* ' + message)
 
 def getUserStats(serverID,userID):
     userC = classServers[serverID].users[userID]
@@ -284,15 +285,16 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    beginTime=datetime.datetime.now()
-    server=message.server
-    classServer=classServers[server.id]
-    path="./resources/servers/"+server.id
+    beginTime = datetime.datetime.now()
+    server = message.server
+    classServer = classServers[server.id]
+    path = "./resources/servers/" + server.id
     #If the message belongs to the bot, ignore it
     if message.author == client.user:
         return
-    #We can't handle PM's just yet, so any message with no server should be ignored.
-    if server==None:
+    #We can't handle PM's just yet, so any message with no server should be
+    #ignored.
+    if server == None:
         return
 
     timeStamp = message.timestamp.strftime("%m/%d/%y %H:%M:%S")
@@ -300,23 +302,23 @@ async def on_message(message):
 
     #If this message is not in the log channel
     if message.channel.id != classServer.logChannel.id:
-        if logAllMessagesToConsole: print('\"'+server.name+'\" '+logString)
+        if logAllMessagesToConsole: print('\"' + server.name + '\" ' + logString)
         await client.send_message(classServer.logChannel,logString)
 
     #If it mentioned everyone (a bit of cheeky fun)
     if message.mention_everyone:
-        await client.send_message(message.channel,"Did you *really* have to mention everyone, <@"+message.author.id+">? Do you know how annoying that is?")
+        await client.send_message(message.channel,"Did you *really* have to mention everyone, <@" + message.author.id + ">? Do you know how annoying that is?")
+    
     try:
     #Reacts
-    #if "botinabox" in message.content.lower():
-    #    emoji=discord.utils.get(client.get_all_emojis(),name='heart')
-    #    await client.add_reaction(message,emoji)
+    #    if "botinabox" in message.content.lower():
+    #        await client.add_reaction(message,'1F600')
 
     #COMMANDS
     
         #GENERAL COMMANDS
         if message.content.startswith(classServer.commandChar + 'help'):
-            helpText = readFile(path+"/doc.txt",classServer)
+            helpText = readFile(path + "/doc.txt",classServer)
             await client.send_message(message.channel, helpText)
         #================================================#
         elif message.content.startswith(classServer.commandChar + 'purge'):
@@ -345,9 +347,9 @@ async def on_message(message):
             if len(strings) < 2 or not isInt(strings[1]):
                 await client.send_message(message.channel, "`Usage: " + classServer.commandChar + "remindme <seconds> <message>`")
                 return
-            reminderMessage=""
+            reminderMessage = ""
             for x in range(2,len(strings)):
-                reminderMessage+=strings[x]+' '
+                reminderMessage+=strings[x] + ' '
             await remind(int(strings[1]),message,reminderMessage)
         #================================================#
         elif message.content.startswith(classServer.commandChar + 'choose'):
@@ -379,7 +381,7 @@ async def on_message(message):
             await client.send_message(message.channel, messageString)
         #================================================#
         elif message.content.startswith(classServer.commandChar + 'motd'):
-            motdText = readFile(path+"/motd.txt",classServer)
+            motdText = readFile(path + "/motd.txt",classServer)
             await client.send_message(message.channel, motdText)
         #================================================#
 
@@ -395,7 +397,7 @@ async def on_message(message):
             query = ""
             for string in strings:
                 query+=(string + " ")
-            print('Wiki query: '+query)
+            print('Wiki query: ' + query)
             messagetext = ""
             page = None
             #Error Handling
@@ -443,7 +445,7 @@ async def on_message(message):
             
             await client.send_message(message.channel, messageText)
         endTime = datetime.datetime.now() - beginTime
-        if message.content.startswith(classServer.commandChar): print('Message Parsing took: '+str(endTime.seconds)+'.'+str(endTime.microseconds)+' seconds')
+        if message.content.startswith(classServer.commandChar): print('Message Parsing took: ' + str(endTime.seconds) + '.' + str(endTime.microseconds) + ' seconds')
 
     #Exceptions
     except Exception as e:
