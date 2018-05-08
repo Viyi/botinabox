@@ -1,13 +1,22 @@
+#TODO: Switch from saving to plaintext to saving in XML
+# Applies to servers (and their members), helpfiles, etc
+#Add commands to change server variables within Discord
+#   (eg: !change commandChar &)
+#================================================#
+
+
 import os#For exit and such
-import sys #For restart
+import sys #For restarting which doesn't actually work yet
 import discord #For obvious reasons
 import asyncio #Needed for discord
-import random #For the RNG generators
-import re #Don't remember
+import random #For the RNG...er, generators
+import re #Don't remember but it's probably needed
 import threading #For the input thread
 import datetime #For getting the date and time
-import wikipedia #For the wiki command
 from difflib import SequenceMatcher #For the command suggestions
+import wikipedia #For the wiki command
+
+
 
 #================================================#
 #===============USER SET VARIABLES===============#
@@ -70,6 +79,7 @@ class serverClass:
         self.users = {}
         self.commands = []
         self.logChannel = None
+        self.musicPlayer=None
 
 #The class that runs the console input in a separate thread
 class InputThread(threading.Thread):
@@ -86,6 +96,44 @@ class InputThread(threading.Thread):
             elif self.last_user_input == "save":
                 save()
                 True
+
+#Class to hold info and functions for a YT music player
+class musicPlayer:
+    def __init__(self, server):
+        print('Connecting to voice on server '+server.name)
+        global client
+        self.server=server
+        self.player=None
+        self.voice=None
+        self.playing=False
+
+    async def setup(self):
+        self.voice=await client.join_voice_channel(self.server.get_channel('433006291506692131'))
+        #Encoder Options
+        self.voice.encoder_options(sample_rate=48000, channels=2)
+
+    async def play(self, name, message):
+        if self.voice is None: await self.setup()
+        self.player=await self.voice.create_ytdl_player('ytsearch:'+name)
+        self.player.volume=0.2
+        #Player Options
+        self.player.start()
+        self.playing=True
+        await client.send_message(message.channel, '*Now Playing: '+self.player.title+'*')
+
+    #TODO HERE: Make this class call stop() when the song ends
+    async def stop(self,message):
+        if self.playing:
+            if self.player is not None:
+                await client.send_message(message.channel, '*Stopping: '+self.player.title+'*')
+                self.player.stop()
+                self.player=None
+                if self.voice is not None:
+                    await self.voice.disconnect()
+                    self.voice=None
+        self.playing=False
+
+
 #END CLASSES
 
 #FUNCTIONS
@@ -143,6 +191,12 @@ def initServer(serverID):
     commandLines = defaultHelpText.split('\n')
     for line in commandLines:
         if '`' in line: classServers[serverID].commands.append(stringOps(line.split("`", 1)[1].split("`", 1)[0],classServers[serverID]))
+
+    for channel in server.channels:
+        #print(channel.name+", ID: "+channel.id);
+        if channel.name == classServers[server.id].logChannelName:
+            classServers[server.id].logChannel = channel
+            break
 
 #Save/Load
 def autosave():
@@ -236,6 +290,11 @@ def loadServer(serverID):
             print("Created Entry for User: " + user.name + ", ID: " + user.id + "")
     print('Loaded/Created ' + str(len(classServers[serverID].users)) + ' users')
 
+    for channel in server.channels:
+            #print(channel.name+", ID: "+channel.id);
+            if channel.name == classServers[server.id].logChannelName:
+                classServers[server.id].logChannel = channel
+                break
 
 #Message-related Functions
 async def remind(time,originalMessage,message):
@@ -250,12 +309,16 @@ def getUserStats(serverID,userID):
 #END FUNCTIONS
 
 #DISCORD CODE
+#When the bot is ready
 @client.event
 async def on_ready():
     #Header Info
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
+    #discord.opus.load_opus()
+    if discord.opus.is_loaded(): print('Opus Codecs Loaded Successfully!')
+    else: print('WARN: Opus Codecs Not Loaded!')
     print('------')
     #Input Thread
     global inputThread
@@ -270,11 +333,7 @@ async def on_ready():
         print('Name: \"' + server.name + '\", ID: ' + server.id + ', Members: ' + str(len(list(server.members))) + ', Large: ' + str(server.large))
         loadServer(server.id)
         print("Loaded " + str(len(classServers[server.id].commands)) + " commands: " + '[%s]' % ', '.join(map(str, classServers[server.id].commands)))
-        for channel in server.channels:
-            #print(channel.name+", ID: "+channel.id);
-            if channel.name == classServers[server.id].logChannelName:
-                classServers[server.id].logChannel = channel
-                break
+        
         print("Logging Channel: " + classServers[server.id].logChannel.name + ", ID: " + classServers[server.id].logChannel.id)
 
         print('<=======================>')
@@ -283,8 +342,13 @@ async def on_ready():
     elapsedTime = datetime.datetime.now() - startTime
     print('Bot started successfully! Took ' + str(elapsedTime.seconds) + '.' + str(elapsedTime.microseconds) + ' seconds')
 
+#When we receive a message
 @client.event
 async def on_message(message):
+    #If, for whatever reason, the server's not in the registry
+    if (message.server.id not in classServers):
+       print('ERROR: Server ' + message.server.name + ', ID: ' + message.server.id + 'not loaded!')
+       return
     beginTime = datetime.datetime.now()
     server = message.server
     classServer = classServers[server.id]
@@ -300,8 +364,8 @@ async def on_message(message):
     timeStamp = message.timestamp.strftime("%m/%d/%y %H:%M:%S")
     logString = "`" + timeStamp + " [" + message.channel.name + "] - " + message.author.name + ": " + message.content + "`"
 
-    #If this message is not in the log channel
-    if message.channel.id != classServer.logChannel.id:
+    #If this message is not in the log channel, and the log channel exists
+    if classServer.logChannel != None and message.channel.id != classServer.logChannel.id:
         if logAllMessagesToConsole: print('\"' + server.name + '\" ' + logString)
         await client.send_message(classServer.logChannel,logString)
 
@@ -309,19 +373,20 @@ async def on_message(message):
     if message.mention_everyone:
         await client.send_message(message.channel,"Did you *really* have to mention everyone, <@" + message.author.id + ">? Do you know how annoying that is?")
     
+    isAdmin = classServer.adminRole.lower() in [y.name.lower() for y in message.author.roles]
     try:
     #Reacts
     #    if "botinabox" in message.content.lower():
     #        await client.add_reaction(message,'1F600')
 
     #COMMANDS
-    
         #GENERAL COMMANDS
         if message.content.startswith(classServer.commandChar + 'help'):
             helpText = readFile(path + "/doc.txt",classServer)
             await client.send_message(message.channel, helpText)
         #================================================#
-        elif message.content.startswith(classServer.commandChar + 'purge'):
+        elif isAdmin and message.content.startswith(classServer.commandChar + 'purge'):
+            
             strings = message.content.split()
             if len(strings) < 2 or not isInt(strings[1]):
                 await client.send_message(message.channel, "`Usage: " + classServer.commandChar + "purge <num of msgs> `")
@@ -385,6 +450,21 @@ async def on_message(message):
             await client.send_message(message.channel, motdText)
         #================================================#
 
+        #Voice
+        #================================================#
+        elif message.content.startswith(classServer.commandChar + 'play'):
+            strings = message.content.split(None,1)
+            songName=" ".join(strings)
+            if classServer.musicPlayer is None: classServer.musicPlayer=musicPlayer(server)
+            await classServer.musicPlayer.play(strings[1],message)
+            
+            
+
+        elif message.content.startswith(classServer.commandChar + 'stop'):
+                await classServer.musicPlayer.stop(message)
+                
+
+
         #Other Hooks
         #================================================#
         elif message.content.startswith(classServer.commandChar + 'wiki'):
@@ -420,8 +500,27 @@ async def on_message(message):
             await client.send_message(message.channel, messageText)
         #================================================#
         
+        #No permission
+        elif not isAdmin and message.content.split()[0] in classServer.commands:
+           await client.send_message(message.channel, '*You do not have permssion to use the \"' + message.content.split()[0] + '\" command*')
+        
 
-        #Command not recognised
+
+
+           #TESTING COMMANDS
+        #================================================#
+
+        elif message.content.startswith(classServer.commandChar + 'testEmbed'):
+            embed = discord.Embed(title="Test embed title", 
+                  description="Test embed description", color=0x20B2AA)
+            embed.add_field()
+            await client.send_message(message.channel, embed=embed)
+           
+        elif client.user.mentioned_in(message):
+            await client.send_message(message.channel,"<@" + message.author.id + "> no")
+           
+         
+           #Command not recognised
         #================================================#
         elif message.content.startswith(classServer.commandChar):
             messageText = ""
@@ -447,21 +546,34 @@ async def on_message(message):
         endTime = datetime.datetime.now() - beginTime
         if message.content.startswith(classServer.commandChar): print('Message Parsing took: ' + str(endTime.seconds) + '.' + str(endTime.microseconds) + ' seconds')
 
+
     #Exceptions
     except Exception as e:
         error = e
         print("ERROR ENCOUNTERED: COMMAND:{" + message.content + "},ERROR:{" + (str(error)) + "}")
         await client.send_message(message.channel, "***Sorry, something's gone wrong!***\n *If this keeps happening, let wolfinabox know that the following error occured:*\n`" + "COMMAND:{" + message.content + "},ERROR:{" + (str(error)) + "}`")
 
+#When the bot joins a server
+@client.event
+async def on_server_join(server):
+    print('<=======================>')
+    print("JOINED NEW SERVER: " + server.name)
+    loadServer(server.id)
+    save()
 
 #Start bot
 startTime = datetime.datetime.now()
 loadID()
 try:
+    
     client.run(clientID)
 except discord.LoginFailure as e:
     print('Please edit botinabox.py, and set the \'clientID\' variable to the token of your bot,\nfrom https://discordapp.com/developers/applications/me.\nOr, place it in a file named token.txt, beside botinabox.py.\n')
     client.close()
     sys.exit()
+except Exception as e:
+        print('I can\'t connect to the Discord servers right now, sorry! :(\nCheck your internet connection, and then https://twitter.com/discordapp for downtimes,\n and then try again later.')
+        client.close()
+        sys.exit()
 
 #END DISCORD CODE
