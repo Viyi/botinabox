@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "C:\\Program Files\\Python36\\python.exe",
+    "python.linting.pylintArgs": ["--errors-only,--unsafe-load-any-extension=y"]
+}

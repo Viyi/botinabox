@@ -6,6 +6,7 @@
 *.pyproj
 backup.py
 token.txt
+log.txt
 servers/
 
 # User-specific files

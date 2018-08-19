@@ -1,0 +1,102 @@
+import discord #For discord functionality
+import asyncio #For Async operations (needed by Discord)
+from datetime import datetime#For date/time functions... who'd have guessed
+import sys,os
+sys.path.insert(0,'.')
+#My files
+from utils.utils import *
+from utils.bGlobals import *
+from commands.commands import *
+from commands.customcommand import *
+#GLOBALS===========================#
+clientID='id_here'
+client = discord.Client()
+sClasses={}
+#==================================#
+
+#DISCORD CODE======================#
+#When the bot is ready
+@client.event
+async def on_ready():
+    #Header Info
+    print('Succesfully logged in:')
+    print('Name: '+client.user.name)
+    print('ID: '+client.user.id)
+    status = 'Mention me for help!'
+    await client.change_presence(game=discord.Game(name=status,url='https://github.com/wolfinabox/botinabox'))
+    print('Status set to: \"' + status + '\"')
+    if discord.opus.is_loaded(): print('Opus Codecs Loaded Successfully!')
+    else: pLog('WARN: Opus Codecs Not Loaded!')
+        
+    #Set up new servers
+    print('Joined New Servers:')
+    for server in client.servers:
+        sClasses[server.id]=serverClass(id) #Make association
+        for channel in server.channels: 
+            if channel.name.lower()==sClasses[server.id].logChannelName:
+                sClasses[server.id].logChannel=channel
+        print('  '+server.name+', '+server.id)
+        print('  Members: '+str(sum(1 for x in server.members)))
+        print('  Log Channel:'+('"'+sClasses[server.id].logChannel.name+'"' if sClasses[server.id].logChannel is not None else 'None'))
+        print('------')
+    
+    elapsedTime = datetime.now() - startTime
+    pLog('Bot started successfully! Took ' + str(elapsedTime.seconds) + '.' + truncate(str(elapsedTime.microseconds),2) + ' seconds')
+    print('------------------')
+
+#When we get a message
+@client.event
+async def on_message(message):
+    beginTime = datetime.now()
+
+    #If the message belongs to the bot, ignore it
+    if message.author == client.user:
+        return
+    #We can't handle PM's just yet, so any message with no server should be
+    #ignored.
+    if message.server == None:
+        return
+
+    sClass=sClasses[message.server.id]
+
+    if message.content.strip().startswith(sClass.commandPrefix):
+        await client.send_typing(message.channel)
+        strings=message.content.strip().split()
+        command=strings[0][1:].lower()
+        if command in sClass.customCommands.keys():
+            await customCommRun(message,client,sClass)
+
+        if command in commDispatcher.keys():
+            try:
+                await commDispatcher[command](message=message,client=client,sClass=sClass,server=message.server)
+            except CommUsage as e:
+                await client.send_message(message.channel,commUsages(command))
+            except NoPerm as e:
+                await client.send_message(message.channel,'You do not have permission to use "'+sClass.commandPrefix+command+'"')
+        
+    elif client.user.mentioned_in(message) and len(message.content.split())<2:
+        await commDispatcher['help'](message=message,client=client,sClass=sClass,server=message.server)
+
+
+#Start bot
+startTime = datetime.now()
+try:
+    clientID=loadID()
+    client.run(clientID)
+except discord.LoginFailure as e:
+    pLog('The clientID in "token.txt" appears to be incorrect. Please double-check that you used the correct\n bot id from https://discordapp.com/developers/applications/me.')
+    pLog(str(e))
+    client.close()
+    #input()
+except FileNotFoundError as e:
+    pLog('Please create a file named "token.txt" next to this executable, and place the token of your bot,\nfrom https://discordapp.com/developers/applications/me, inside it.')
+    pLog(str(e))    
+    client.close()
+    #input()
+except Exception as e:
+    pLog('I can\'t connect to the Discord servers right now, sorry! :(\nCheck your internet connection, and then https://twitter.com/discordapp for Discord downtimes,\n and then try again later.')
+    pLog(str(e))
+    client.close()
+    #input()
+
+#END DISCORD CODE
