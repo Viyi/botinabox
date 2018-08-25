@@ -1,4 +1,5 @@
 import discord #For discord functionality
+
 import asyncio #For Async operations (needed by Discord)
 from datetime import datetime#For date/time functions... who'd have guessed
 import sys,os
@@ -27,7 +28,6 @@ async def on_ready():
     print('Status set to: \"' + status + '\"')
     if discord.opus.is_loaded(): print('Opus Codecs Loaded Successfully!')
     else: pLog('WARN: Opus Codecs Not Loaded!')
-        
     #Set up new servers
     print('Joined New Servers:')
     for server in client.servers:
@@ -63,17 +63,38 @@ async def on_message(message):
         await client.send_typing(message.channel)
         strings=message.content.strip().split()
         command=strings[0][1:].lower()
+        #It's a custom command
         if command in sClass.customCommands.keys():
             await customCommRun(message,client,sClass)
-
-        if command in commDispatcher.keys():
+        #It's a regular command
+        elif command in commandDict.keys():
             try:
-                await commDispatcher[command](message=message,client=client,sClass=sClass,server=message.server)
+                await commandDict[command]['function'](message=message,client=client,sClass=sClass,server=message.server)
             except CommUsage as e:
                 await client.send_message(message.channel,commUsages(command))
             except NoPerm as e:
                 await client.send_message(message.channel,'You do not have permission to use "'+sClass.commandPrefix+command+'"')
-        
+        #It's not recognised
+        else:
+            msg=""
+            strings=message.content.split()
+            allCommands={**commandDict,**sClass.customCommands}
+            percentages={}
+            for comm in allCommands.keys():
+                percentages[comm]=round(similar(strings[0],comm) * 100,1)
+            mostLikelyPercent = max(v for k, v in percentages.items())
+            msg+="*Sorry, I don't recognise \"" + strings[0] + "\"*\n"
+            if (mostLikelyPercent > 40):
+                msg+="*Did you mean:*\n"
+                for key,value in sorted(percentages.items(), key=lambda x:x[1],reverse=True):
+                   if (value > 40):
+                         msg+="*(" + str(value) + "%)* `" + key + "`\n"
+            else:
+                msg+="*Try " + sClass.commandPrefix + "help to see all commands.*"
+            await client.send_message(message.channel, msg)
+   
+
+
     elif client.user.mentioned_in(message) and len(message.content.split())<2:
         await commDispatcher['help'](message=message,client=client,sClass=sClass,server=message.server)
 

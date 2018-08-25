@@ -9,7 +9,9 @@ defaultCommandPrefix='&'
 defaultLogChannelName='logs'
 defaultHelpText="""***BotInABox Helpfile, v1.0.0***
 **<=======================================================>**
-$commands$
+$generalCommands$
+$adminCommands$
+$customCommands$
 **<=======================================================>**"""
 defaultMotd="""**/\\/\\/\\$serverName$ Message Of The Day $date$/\\/\\/\\**
 **<======================================================>**

@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from difflib import SequenceMatcher 
 from utils.bGlobals import *
 from storageclasses.serverclass import *
 #GLOBALS===========================#
@@ -64,8 +65,8 @@ def isInt(s:str):
         return False
 
 def timeToSec(s:str):
-    seconds=0
     #Format: 00:00:00 (hour:minute:second)
+    seconds=0
     strings=s.split(':')
     if len(strings)>3: raise ValueError()
     multiplier=1
@@ -74,6 +75,12 @@ def timeToSec(s:str):
         seconds+=(int(string)*multiplier)
         multiplier*=60
     return seconds
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+def any_in(a, b):
+  return not set(a).isdisjoint(b)
 
 class CommUsage(Exception):
     def __init__(self,arg):

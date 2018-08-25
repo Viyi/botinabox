@@ -21,13 +21,11 @@ class Reminder():
         await self.client.send_message(self.origMessage.channel,self.origMessage.author.mention+': '+self.msg)
 
 #COMMANDS==========================#
-commDispatcher={}
-usages={}
+commandDict={}
 #GENERAL COMMANDS==================#
 async def commTest(message,client,**kwargs):
     await client.send_message(message.channel,'Hello there '+message.author.name+'!')
-commDispatcher['test']=partial(commTest)
-usages['test']='A test command.'
+commandDict['test']={'function':partial(commTest),'usage':'A test command.','type':'general'}
 #==================================#
 async def commHelp(message,client,sClass,**kwargs):
     strings = message.content.split(None,1)
@@ -37,14 +35,13 @@ async def commHelp(message,client,sClass,**kwargs):
         msg=helptext
     else:
         searchText=strings[1].strip()
-        for comm,usage in usages.items():
+        for comm,usage['usage'] in usages.items():
             if searchText in comm or searchText in usage:
                 msg+='*'+comm.replace(searchText,'__'+searchText+'__')+'* '+usage.replace(searchText,'__'+searchText+'__')+'\n'
         if not msg:
             msg='No results in helptext containing "'+searchText+'"'
     await client.send_message(message.channel,msg)
-commDispatcher['help']=partial(commHelp)
-usages['help']='**<search text>**Displays the helptext. Optionally, search helptext for keyword'
+commandDict['help']={'function':partial(commHelp),'usage':'**<search text>**Displays the helptext. Optionally, search helptext for keyword','type':'general'}
 #==================================#
 async def commRandom(message,client,**kwargs):
     formats=['I choose number **{0}**!','**{0}** seems good.','Hmmm... What about **{0}**?','RANDOM_NUMBER_CHOSEN: #**{0}** (beep boop)']
@@ -54,8 +51,7 @@ async def commRandom(message,client,**kwargs):
     randNum=random.randint(int(strings[1]),int(strings[2]))
     msg=random.choice(formats).format(str(randNum))
     await client.send_message(message.channel,msg)
-commDispatcher['random']=partial(commRandom)
-usages['random']='**<high> <low>** Generate a random number between high and low'
+commandDict['random']={'function':partial(commRandom),'usage':'**<high> <low>** Generate a random number between high and low','type':'general'}
 #==================================#
 async def commChoose(message,client,**kwargs):
     formats=['I pick "{0}"!','"{0}" seems good.','Hmmm... What about "{0}"?','RANDOM_OPTION_CHOSEN: "{0}" (beep boop)']
@@ -68,8 +64,7 @@ async def commChoose(message,client,**kwargs):
     choice=random.choice(options)
     msg=random.choice(formats).format(choice)
     await client.send_message(message.channel,msg)
-commDispatcher['choose']=partial(commChoose)
-usages['choose']='**<choice1|choice2|choice3|...>** Chooses randomly from the given options'
+commandDict['choose']={'function':partial(commChoose),'usage':'**<choice1|choice2|choice3|...>** Chooses randomly from the given options','type':'general'}
 #==================================#
 async def commServerStats(message,client,server,**kwargs):
     msg = '**Stats for ' + server.name + ':**\n'
@@ -81,8 +76,7 @@ async def commServerStats(message,client,server,**kwargs):
     totalUsers = numUsers + numBots
     msg+='*Total Users:* ' + str(totalUsers) + '\n*Humans:* ' + str(numUsers) + '\n*Bots:* ' + str(numBots)
     await client.send_message(message.channel,msg)
-commDispatcher['serverstats']=partial(commServerStats)
-usages['serverstats']='Get some stats on this server'
+commandDict['serverstats']={'function':partial(commServerStats),'usage':'Get some stats on this server','type':'general'}
 #==================================#
 async def commRemind(message,client,**kwargs):
     strings=message.content.split()
@@ -92,8 +86,7 @@ async def commRemind(message,client,**kwargs):
     msg = ' '.join(strings[2::])
     rmd=Reminder(client,message,msg,remindTime)
     await rmd.run()
-commDispatcher['remindme']=partial(commRemind)
-usages['remindme']='**<time h\:m\:s> <message>** Send a reminder after the given time'
+commandDict['remindme']={'function':partial(commRemind),'usage':'**<time h\:m\:s> <message>** Send a reminder after the given time','type':'general'}
 #==================================#
 async def commWiki(message,client,**kwargs):
     #Split up Strings
@@ -121,8 +114,7 @@ async def commWiki(message,client,**kwargs):
     #Truncate message
     messageText=truncate(messageText,1000,'...`')
     await client.send_message(message.channel, messageText)
-commDispatcher['wiki']=partial(commWiki)
-usages['wiki']='**<thing>** Search something up on wikipedia'
+commandDict['wiki']={'function':partial(commWiki),'usage':'**<thing>** Search something up on wikipedia','type':'general'}
 #==================================#
 async def commInvite(message,client,server,**kwargs):
     #Check to see if bot has already made an invite
@@ -135,8 +127,7 @@ async def commInvite(message,client,server,**kwargs):
     if myInvite is None:
         myInvite=await client.create_invite(destination=message.channel,max_age=0,max_uses=0,temporary=False,unique=True)
     await client.send_message(message.channel,'Invite: ' + myInvite.url)
-commDispatcher['invite']=partial(commInvite)
-usages['invite']='Get an invite to this server'
+commandDict['invite']={'function':partial(commInvite),'usage':'Get an invite to this server','type':'general'}
 #==================================#
 #ADMIN COMMANDS====================#
 async def commPurge(message,client,**kwargs):
@@ -152,8 +143,8 @@ async def commPurge(message,client,**kwargs):
     async for msg in client.logs_from(message.channel, limit=delNum):
         msgs.append(msg)
     await client.delete_messages(msgs)
-commDispatcher['purge']=partial(commPurge)
-usages['purge']='Purge (delete) the number of messages specified in the current channel {Requires "manage_messages"}'
+commandDict['purge']={'function':partial(commPurge),'usage':
+'**<number_of_messages>** Purge (delete) the number of messages specified in the current channel {Requires "manage_messages"}','type':'admin'}
 #==================================#
 async def commCommPrefix(message,client,sClass,**kwargs):
     strings=message.content.split()
@@ -165,8 +156,8 @@ async def commCommPrefix(message,client,sClass,**kwargs):
     sClass.commandPrefix = strings[1].strip()
     await client.send_message(message.channel, 
     'The command prefix for this server was changed from \"' + oldcommandPrefix + '\" to \"' + sClass.commandPrefix + '\".')
-commDispatcher['commandprefix']=partial(commCommPrefix)
-usages['commandprefix']='**<character>** Change this server\'s command prefix {Requires "manage_server"}'
+commandDict['commandprefix']={'function':partial(commCommPrefix),'usage':
+'**<character>** Change this server\'s command prefix {Requires "manage_server"}','type':'admin'}
 #==================================#
 async def commCustomCommand(message,client,sClass,**kwargs):
     strings=message.content.split()
@@ -183,13 +174,14 @@ async def commCustomCommand(message,client,sClass,**kwargs):
         await customCommDelete(message,client,sClass)
     elif strings[1]=='list':
         await customCommList(message,client,sClass)
-commDispatcher['customcommand']=partial(commCustomCommand)
-usages['customcommand']='**<help|list|create|delete>** Manage this server\'s custom commands. See customcommand help for more info {Requires "manage_server" for creation/deletion}'
+commandDict['customcommand']={'function':partial(commCustomCommand),'usage':
+'**<help|list|create|delete>** Manage this server\'s custom commands. See customcommand help for more info {Requires "manage_server" for creation/deletion}',
+'type':'admin'}
 #==================================#
 
 
 def commUsages(command:str,commandPrefix:str=defaultCommandPrefix):
-    usage='`'+commandPrefix+command+'` '+usages[command] if command in usages else 'No information on command `'+commandPrefix+command+'` found.'
+    usage='`'+commandPrefix+command+'` '+commandDict[command]['usage'] if command in commandDict.keys() else 'No information on command `'+commandPrefix+command+'` found.'
     return usage
     
 def stringOps(data:str,sClass:serverClass=None,server:discord.server=None):
@@ -197,7 +189,14 @@ def stringOps(data:str,sClass:serverClass=None,server:discord.server=None):
     data = data.replace('$date$',datetime.now().strftime("%m/%d/%Y"))
     #Server Specific replacements
     if sClass is not None:
-        data=data.replace('$commands$','\n'.join([commUsages(comm,sClass.commandPrefix) for comm in usages.keys()]))
+        data=data.replace('$allCommands$','\n'.join([commUsages(comm,sClass.commandPrefix) for comm in commandDict.keys()]))
+        data=data.replace('$generalCommands$','**General Commands:**\n'+('\n'.join(commUsages(comm,sClass.commandPrefix) for comm in commandDict.keys() if commandDict[comm]['type']=='general')))
+        data=data.replace('$adminCommands$','**Admin Commands:**\n'+('\n'.join(commUsages(comm,sClass.commandPrefix) for comm in commandDict.keys() if commandDict[comm]['type']=='admin')))
+    if sClass is not None:
+        if sClass.customCommands:
+            data=data.replace('$customCommands$','**Custom Commands:**\n'+('\n'.join(['`'+sClass.commandPrefix+comm+'` '+response for comm,response in sClass.customCommands.items()])))
+        else:
+            data=data.replace('$customCommands$','')
     if server is not None:
         data = data.replace('$serverName$',client.get_server(sClass.id).name)
     return data
