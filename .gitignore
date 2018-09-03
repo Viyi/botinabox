@@ -8,7 +8,7 @@ backup.py
 token.txt
 log.txt
 servers/
-
+.vscode/
 # User-specific files
 *.suo
 *.user

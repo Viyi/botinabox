@@ -1,6 +1,6 @@
 import discord
 import asyncio
-
+from src.utils.utils import *
 async def customCommHelp(message,client,sClass):
     commPref=sClass.commandPrefix
     text="***BotInABox Custom Commands Helpfile, v0.0.1***\n**<=======================================================>**\n"
@@ -36,6 +36,7 @@ async def customCommCreate(message,client,sClass):
     overwrite=commName in sClass.customCommands
     sClass.customCommands[commName]=response
     await client.send_message(message.channel,'*'+('Overwrote' if overwrite else 'Created')+ '  command `'+sClass.commandPrefix+commName+'`.*')
+    saveServer(sClass)
 
 async def customCommRun(message,client,sClass):
     strings=message.content.split()
@@ -58,6 +59,7 @@ async def customCommDelete(message,client,sClass):
         return
     sClass.customCommands.pop(commName,None)
     await client.send_message(message.channel,'*Custom command `'+sClass.commandPrefix+commName+'` deleted.*')
+    saveServer(sClass)
 
 async def customCommList(message,client,sClass):
     msg='***Custom Commands:***\n'

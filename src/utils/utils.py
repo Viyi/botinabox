@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import datetime
 from difflib import SequenceMatcher 
 from utils.bGlobals import *
@@ -81,6 +82,25 @@ def similar(a, b):
 
 def any_in(a, b):
   return not set(a).isdisjoint(b)
+
+def loadServer(id,folderPath=os.path.join(script_dir,'resources','servers')):
+    path=os.path.join(folderPath,id+'.json')
+    #If the file does not exist
+    if not os.path.isfile(path): return None
+    temp={}
+    with open(path,'r') as f:
+        temp=json.load(f)
+    sClass=serverClass(temp['id'])
+    if 'commandPrefix' in temp: sClass.commandPrefix=temp['commandPrefix']
+    if 'customCommands' in temp: sClass.customCommands=temp['customCommands']
+    return sClass
+
+def saveServer(serverClass,folderPath=os.path.join(script_dir,'resources','servers')):
+    path=os.path.join(folderPath,serverClass.id+'.json')
+    data={'id':serverClass.id,'commandPrefix':serverClass.commandPrefix,'customCommands':serverClass.customCommands}
+    with open(path,'w') as f:
+        json.dump(data,f,indent=4)
+    
 
 class CommUsage(Exception):
     def __init__(self,arg):

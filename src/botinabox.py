@@ -1,5 +1,4 @@
 import discord #For discord functionality
-
 import asyncio #For Async operations (needed by Discord)
 from datetime import datetime#For date/time functions... who'd have guessed
 import sys,os
@@ -28,16 +27,25 @@ async def on_ready():
     print('Status set to: \"' + status + '\"')
     if discord.opus.is_loaded(): print('Opus Codecs Loaded Successfully!')
     else: pLog('WARN: Opus Codecs Not Loaded!')
+    #JSON Path
+    if not os.path.exists(os.path.join(script_dir,'resources','servers')): os.makedirs(os.path.join(script_dir,'resources','servers'))
     #Set up new servers
-    print('Joined New Servers:')
+    print('Servers:')
     for server in client.servers:
-        sClasses[server.id]=serverClass(id) #Make association
-        for channel in server.channels: 
-            if channel.name.lower()==sClasses[server.id].logChannelName:
-                sClasses[server.id].logChannel=channel
-        print('  '+server.name+', '+server.id)
+        temp=loadServer(server.id)
+        if temp:
+            sClasses[server.id]=temp
+            print('  Loaded: "'+server.name+'", '+server.id)
+        else:
+            sClasses[server.id]=serverClass(server.id) #Make association
+            print('  Created: "'+server.name+'", '+server.id)
+            
+    #    for channel in server.channels: 
+    #        if channel.name.lower()==sClasses[server.id].logChannelName:
+    #            sClasses[server.id].logChannel=channel
         print('  Members: '+str(sum(1 for x in server.members)))
-        print('  Log Channel:'+('"'+sClasses[server.id].logChannel.name+'"' if sClasses[server.id].logChannel is not None else 'None'))
+    #    print('  Log Channel:'+('"'+sClasses[server.id].logChannel.name+'"' if sClasses[server.id].logChannel is not None else 'None'))
+        saveServer(sClasses[server.id])
         print('------')
     
     elapsedTime = datetime.now() - startTime
