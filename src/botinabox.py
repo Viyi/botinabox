@@ -114,17 +114,17 @@ try:
     client.run(clientID)
 except discord.LoginFailure as e:
     pLog('The clientID in "token.txt" appears to be incorrect. Please double-check that you used the correct\n bot id from https://discordapp.com/developers/applications/me.')
-    pLog(str(e))
+    log(str(e))
     client.close()
     #input()
 except FileNotFoundError as e:
     pLog('Please create a file named "token.txt" next to this executable, and place the token of your bot,\nfrom https://discordapp.com/developers/applications/me, inside it.')
-    pLog(str(e))    
+    log(str(e))    
     client.close()
     #input()
 except Exception as e:
     pLog('I can\'t connect to the Discord servers right now, sorry! :(\nCheck your internet connection, and then https://twitter.com/discordapp for Discord downtimes,\n and then try again later.')
-    pLog(str(e))
+    log(str(e))
     client.close()
     #input()
 

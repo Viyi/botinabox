@@ -4,11 +4,14 @@
 #My specified files
 *.sln
 *.pyproj
+*.spec
 backup.py
 token.txt
 log.txt
 servers/
 .vscode/
+build/
+dist/
 # User-specific files
 *.suo
 *.user
