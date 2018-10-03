@@ -1,6 +1,6 @@
 import os
 import sys
-from utils.utils import *
+from src.utils.utils import *
 #Util stuff
 script_dir=os.path.join(os.path.dirname(__file__),'..')
 isExecutable = getattr(sys,'frozen',False)

@@ -2,8 +2,8 @@ import os
 import json
 from datetime import datetime
 from difflib import SequenceMatcher 
-from utils.bGlobals import *
-from storageclasses.serverclass import *
+from src.utils.bGlobals import *
+from src.storageclasses.serverclass import *
 #GLOBALS===========================#
 max_logs=150
 #==================================#
@@ -91,8 +91,8 @@ def loadServer(id,folderPath=os.path.join(script_dir,'resources','servers')):
     with open(path,'r') as f:
         temp=json.load(f)
     sClass=serverClass(temp['id'])
-    if 'commandPrefix' in temp: sClass.commandPrefix=temp['commandPrefix']
-    if 'customCommands' in temp: sClass.customCommands=temp['customCommands']
+    sClass.commandPrefix=(temp['commandPrefix'] if 'commandPrefix' in temp else defaultCommandPrefix )
+    sClass.customCommands=(temp['customCommands'] if 'customCommands' in temp else [])
     return sClass
 
 def saveServer(serverClass,folderPath=os.path.join(script_dir,'resources','servers')):

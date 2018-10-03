@@ -1,4 +1,4 @@
-from utils.bGlobals import *
+from src.utils.bGlobals import *
 class serverClass:
     def __init__(self,id):
         self.id = id

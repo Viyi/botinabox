@@ -6,8 +6,8 @@ import datetime,time
 from functools import partial
 from src.utils.bGlobals import *
 from src.utils.utils import *
-from storageclasses.serverclass import *
-from commands.customcommand import *
+from src.storageclasses.serverclass import *
+from src.commands.customcommand import *
 #CLASSES===========================#
 class Reminder():
     def __init__(self,client,origMessage,msg,time):
@@ -128,6 +128,18 @@ async def commInvite(message,client,server,**kwargs):
         myInvite=await client.create_invite(destination=message.channel,max_age=0,max_uses=0,temporary=False,unique=True)
     await client.send_message(message.channel,'Invite: ' + myInvite.url)
 commandDict['invite']={'function':partial(commInvite),'usage':'Get an invite to this server','type':'general'}
+#==================================#
+async def commBotInvite(message,client,**kwargs):
+    permissions='8'
+    invite='https://discordapp.com/oauth2/authorize?client_id='+client.user.id+'&scope=bot&permissions='+permissions
+    await client.send_message(message.channel,'You can use this link to add me to your server!\n'+invite)
+commandDict['botinvite']={'function':partial(commBotInvite),'usage':'Get a link to add this bot to your server','type':'general'}
+#==================================#
+async def commSomeone(message,client,server,**kwargs):
+    formats=['*{0}, I choose you!*','*Hmmm... I pick {0}*','*{0} has been chosen*']
+    randomUser=random.choice(list(server.members))
+    await client.send_message(message.channel,random.choice(formats).format(randomUser.mention))
+commandDict['someone']={'function':partial(commSomeone),'usage':'Mention someone at random','type':'general'}
 #==================================#
 #ADMIN COMMANDS====================#
 async def commPurge(message,client,**kwargs):

@@ -4,10 +4,10 @@ from datetime import datetime#For date/time functions... who'd have guessed
 import sys,os
 sys.path.insert(0,'.')
 #My files
-from utils.utils import *
-from utils.bGlobals import *
-from commands.commands import *
-from commands.customcommand import *
+from src.utils.utils import *
+from src.utils.bGlobals import *
+from src.commands.commands import *
+from src.commands.customcommand import *
 #GLOBALS===========================#
 clientID='id_here'
 client = discord.Client()
@@ -104,7 +104,7 @@ async def on_message(message):
 
 
     elif client.user.mentioned_in(message) and len(message.content.split())<2:
-        await commDispatcher['help'](message=message,client=client,sClass=sClass,server=message.server)
+        await commandDict['help']['function'](message=message,client=client,sClass=sClass,server=message.server)
 
 
 #Start bot
