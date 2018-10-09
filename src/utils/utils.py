@@ -4,6 +4,7 @@ from datetime import datetime
 from difflib import SequenceMatcher 
 from src.utils.bGlobals import *
 from src.storageclasses.serverclass import *
+from bisect import bisect_left
 #GLOBALS===========================#
 max_logs=150
 #==================================#
@@ -58,6 +59,11 @@ def truncate(data:str,length:int,append:str=''):
     """
     return (data[:length]+append) if len(data)>length else data
 
+def binary_search(a, x, lo=0, hi=None):  # can't use a to specify default for hi
+    hi = hi if hi is not None else len(a)  # hi defaults to len(a)   
+    pos = bisect_left(a, x, lo, hi)  # find insertion position
+    return (True if pos != hi and a[pos] == x else False)
+
 def isInt(s:str):
     try: 
         int(s)
@@ -94,6 +100,8 @@ def loadServer(id,folderPath=os.path.join(script_dir,'resources','servers')):
     sClass.commandPrefix=(temp['commandPrefix'] if 'commandPrefix' in temp else defaultCommandPrefix )
     sClass.customCommands=(temp['customCommands'] if 'customCommands' in temp else [])
     return sClass
+
+
 
 def saveServer(serverClass,folderPath=os.path.join(script_dir,'resources','servers')):
     path=os.path.join(folderPath,serverClass.id+'.json')
