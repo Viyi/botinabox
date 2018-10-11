@@ -8,6 +8,7 @@ import socket
 import sys
 import math
 import numpy as np
+from subprocess import call
 
 from bs4 import BeautifulSoup
 
@@ -287,30 +288,30 @@ commandDict['nsfw'] = {'function':partial(commHentai), 'usage':'Warning! NSFW!',
 
 async def commLights(message, client, server, **kwargs):
     strings = message.content.split()
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
     sock.settimeout(10)
     try:
         if 'on' in strings:
             print("Trying Lights On")
-            while True:
-                sock.connect(("192.168.1.27", 21))
-                sock.send('RON'.encode())
-                sock.send('LON'.encode())
+            
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect(("192.168.1.27", 21))
+            sock.send('RON'.encode())
+            sock.send('LON'.encode())
             sock.close()
             await client.send_message(message.channel, "Let there be light!")
         elif 'off' in strings:
             print("Trying Lights Off")
-            while True:
-                sock.connect(("192.168.1.27", 21))
-                sock.send('ROFF'.encode())
-                sock.send('LOFF'.encode())
+            sock.connect(("192.168.1.27", 21))
+            sock.send('ROFF'.encode())
+            sock.send('LOFF'.encode())
             sock.close()
             await client.send_message(message.channel,
                                        "Ah you think darkness is your ally? You merely adopted the dark. I was born in it, molded by it. I didn't see the light until I was already a man, by then it was nothing to me but blinding! ")
         else:
             x = 0
             y = 40
-    
+            sock.connect(("192.168.1.27", 21))
             while True:
                  if y < 1:
                      break
@@ -325,20 +326,18 @@ async def commLights(message, client, server, **kwargs):
                      on_cmd = "LON\0"
                      off_cmd = "LOFF\0"
         
-                 sock.connect(("192.168.1.27", 21))
+                
                  sock.send(on_cmd.encode())
-                 sock.close()
                  time.sleep(abs(math.cos(x))*.1)
-                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                 sock.connect(("192.168.1.27", 21))
                  sock.send(off_cmd.encode())
                  x = x + math.pi/4
                  y = y - 1
             sock.close()
-        await client.send_message(message.channel, "Notice me!")    
+            await client.send_message(message.channel, "Notice me!")    
     except socket.timeout:
         await client.send_message(message.channel, "UwU, Are the lights disconnected?")  
-    
+    except ConnectionAbortedError:
+        await client.send_message(message.channel, "UwU, Are the lights disconnected?") 
     
      
 commandDict['lights'] = {'function':partial(commLights), 'usage':'lights on', 'type':'general'}
@@ -381,6 +380,19 @@ async def commCommPrefix(message, client, sClass, **kwargs):
 
 commandDict['commandprefix'] = {'function':partial(commCommPrefix), 'usage':
 '**<character>** Change this server\'s command prefix {Requires "manage_server"}', 'type':'admin'}
+
+async def commUpdate(message, client, sClass, **kwargs):
+    strings = message.content.split()
+    if not hasPerm(message.author, 'manage_server', message.channel):
+        raise NoPerm(strings[0])
+   
+    call(['bash','../../update.sh'])
+    await client.send_message(message.channel,
+    'Updating!')
+
+
+commandDict['update'] = {'function':partial(commUpdate), 'usage':
+'Updates server from git', 'type':'admin'}
 
 
 #==================================#
