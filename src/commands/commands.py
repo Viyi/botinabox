@@ -386,7 +386,7 @@ async def commUpdate(message, client, sClass, **kwargs):
     if not hasPerm(message.author, 'manage_server', message.channel):
         raise NoPerm(strings[0])
    
-    call(['bash','../../update.sh'])
+    call(['bash','./home/zootzoot/discord/botinabox/update.sh'])
     await client.send_message(message.channel,
     'Updating!')
 

@@ -1,9 +1,9 @@
 echo "Updating From Git Remote"
-pkill Python
+sudo systemctl stop /etc/rc-local.service
 git fetch
 git checkout origin/unstable
 echo "Updated Restarting Bot"
-python src/botinabox.py &
+python systemctl start /etc/rc-local.service
 
 
 
