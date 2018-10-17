@@ -1,9 +1,9 @@
 echo "Updating From Git Remote"
-pkill Python
+pkill python3.6
 git fetch
 git checkout origin/unstable
 echo "Updated Restarting Bot"
-python src/botinabox.py &
+python3.6 src/botinabox.py &
 
 
 

@@ -92,6 +92,17 @@ async def commRandom(message, client, **kwargs):
 
 commandDict['random'] = {'function':partial(commRandom), 'usage':'**<high> <low>** Generate a random number between high and low', 'type':'general'}
 
+#==================================#
+async def commCam(message, client, **kwargs):
+    os.system("fswebcam -r 1280 /home/zootzoot/Pictures/out.jpg")
+    time.sleep(1)
+    await client.send_file(message.channel, "/home/zootzoot/Pictures/out.jpg")
+
+commandDict['cam'] = {'function':partial(commCam), 'usage':'output cam', 'type':'general'}
+
+
+
+
 
 #==================================#
 async def commChoose(message, client, **kwargs):
@@ -386,7 +397,7 @@ async def commUpdate(message, client, sClass, **kwargs):
     if not hasPerm(message.author, 'manage_server', message.channel):
         raise NoPerm(strings[0])
    
-    call(['bash','../../update.sh'])
+    call(['bash','/home/zootzoot/discord/botinabox/update.sh'])
     await client.send_message(message.channel,
     'Updating!')
 
